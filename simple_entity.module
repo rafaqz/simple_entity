@@ -1,0 +1,345 @@
+<?php
+
+/**
+ * Implements hook_entity_info().
+ */
+function simple_entity_entity_info() {
+  $return = array(
+    'simple_entity' => array(
+      'label' => t('Simple Entity'),
+      'entity class' => 'SimpleEntity',
+      'controller class' => 'SimpleEntityController',
+      'base table' => 'simple_entity',
+      'fieldable' => TRUE,
+      'entity keys' => array(
+        'id' => 'tkid',
+        'bundle' => 'type',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => array(),
+      'load hook' => 'simple_entity_load',
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Default'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      'label callback' => 'entity_class_label',
+      'uri callback' => 'entity_class_uri',
+      'module' => 'simple_entity',
+      'access callback' => 'simple_entity_access',
+    ),
+  );
+  $return['simple_entity_type'] = array(
+    'label' => t('Simple Entity Type'),
+    'entity class' => 'SimpleEntityType',
+    'controller class' => 'SimpleEntityTypeController',
+    'base table' => 'simple_entity_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'simple_entity',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'label',
+    ),
+    'module' => 'simple_entity',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/simple_entity-types',
+      'file' => 'simple_entity.admin.inc',
+      'controller class' => 'SimpleEntityTypeUIController',
+    ),
+    'access callback' => 'simple_entity_type_access',
+  );
+
+  return $return;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function simple_entity_entity_info_alter(&$entity_info) {
+  foreach (simple_entity_types() as $type => $info) {
+    $entity_info['simple_entity']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/simple_entity-types/manage/%simple_entity_type',
+        'real path' => 'admin/structure/simple_entity-types/manage/' . $type,
+        'bundle argument' => 4,
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function simple_entity_menu() {
+  $items = array();
+
+  $items['simple_entity/add'] = array(
+    'title' => 'Add simple_entity',
+    'page callback' => 'simple_entity_admin_add_page',
+    'access arguments' => array('administer simple_entity entities'),
+    'file' => 'simple_entity.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+    'tab_parent' => 'simple_entity',
+    'tab_root' => 'simple_entity',
+  );
+
+  $simple_entity_uri = 'simple_entity/%simple_entity';
+  $simple_entity_uri_argument_position = 1;
+
+  $items[$simple_entity_uri] = array(
+    'title callback' => 'entity_label',
+    'title arguments' => array('simple_entity', $simple_entity_uri_argument_position),
+    'page callback' => 'simple_entity_view',
+    'page arguments' => array($simple_entity_uri_argument_position),
+    'access callback' => 'entity_access',
+    'access arguments' => array('view', 'simple_entity', $simple_entity_uri_argument_position),
+    'file' => 'simple_entity.pages.inc',
+  );
+
+  $items[$simple_entity_uri . '/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  $items[$simple_entity_uri . '/delete'] = array(
+    'title' => 'Delete simple_entity',
+    'title callback' => 'simple_entity_label',
+    'title arguments' => array($simple_entity_uri_argument_position),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simple_entity_delete_form', $simple_entity_uri_argument_position),
+    'access callback' => 'entity_access',
+    'access arguments' => array('edit', 'simple_entity', $simple_entity_uri_argument_position),
+    'file' => 'simple_entity.admin.inc',
+  );
+
+  $items[$simple_entity_uri . '/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simple_entity_form', $simple_entity_uri_argument_position),
+    'access callback' => 'entity_access',
+    'access arguments' => array('edit', 'simple_entity', $simple_entity_uri_argument_position),
+    'file' => 'simple_entity.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  foreach (simple_entity_types() as $type => $info) {
+    $items['simple_entity/add/' . $type] = array(
+      'title' => 'Add simple_entity',
+      'page callback' => 'simple_entity_add',
+      'page arguments' => array(2),
+      'access callback' => 'entity_access',
+      'access arguments' => array('create', 'simple_entity', $type),
+      'file' => 'simple_entity.admin.inc',
+    );
+  }
+
+  $items['admin/structure/simple_entity-types/%simple_entity_type/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simple_entity_type_form_delete_confirm', 4),
+    'access arguments' => array('administer simple_entity types'),
+    'weight' => 1,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'simple_entity.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function simple_entity_permission() {
+  $permissions = array(
+    'administer simple_entity types' => array(
+      'title' => t('Administer simple_entity types'),
+      'description' => t('Allows users to configure simple_entity types and their fields.'),
+      'restrict access' => TRUE,
+    ),
+    'create simple_entity entities' => array(
+      'title' => t('Create simple entities'),
+      'description' => t('Allows users to create simple entities.'),
+      'restrict access' => TRUE,
+    ),
+    'view simple_entity entities' => array(
+      'title' => t('View simple entities'),
+      'description' => t('Allows users to view simple entities.'),
+      'restrict access' => TRUE,
+    ),
+    'edit any simple_entity entities' => array(
+      'title' => t('Edit any simple entities'),
+      'description' => t('Allows users to edit any simple entities.'),
+      'restrict access' => TRUE,
+    ),
+    'edit own simple_entity entities' => array(
+      'title' => t('Edit own simple entities'),
+      'description' => t('Allows users to edit own simple entities.'),
+      'restrict access' => TRUE,
+    ),
+  );
+
+  return $permissions;
+}
+
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function simple_entity_entity_property_info_alter(&$info) {
+  $properties = &$info['simple_entity']['properties'];
+  $properties['created'] = array(
+    'label' => t("Date created"),
+    'type' => 'date',
+    'description' => t("The date the node was posted."),
+    'setter callback' => 'entity_property_verbatim_set',
+    'setter permission' => 'administer nodes',
+    'schema field' => 'created',
+  );
+  $properties['changed'] = array(
+    'label' => t("Date changed"),
+    'type' => 'date',
+    'schema field' => 'changed',
+    'description' => t("The date the node was most recently updated."),
+  );
+  $properties['uid'] = array(
+    'label' => t("Author"),
+    'type' => 'user',
+    'description' => t("The author of the simple_entity."),
+    'setter callback' => 'entity_property_verbatim_set',
+    'setter permission' => 'administer simple_entity entities',
+    'required' => TRUE,
+    'schema field' => 'uid',
+  );
+}
+
+
+/*******************************************************************************
+ ********************************* Simple Entity API's **********************************
+ ******************************************************************************/
+
+/**
+ * Access callback for simple_entity.
+ */
+function simple_entity_access($op, $simple_entity, $account = NULL, $entity_type = NULL) {
+  global $user;
+
+  if (!isset($account)) {
+    $account = $user;
+  }
+  switch ($op) {
+    case 'create':
+      return user_access('administer simple_entity entities', $account)
+          || user_access('create simple_entity entities', $account);
+    case 'view':
+      return user_access('administer simple_entity entities', $account)
+          || user_access('view simple_entity entities', $account);
+    case 'edit':
+      return user_access('administer simple_entity entities')
+          || user_access('edit any simple_entity entities')
+          || (user_access('edit own simple_entity entities') && ($simple_entity->uid == $account->uid));
+  }
+}
+
+/**
+ * Load a simple_entity.
+ */
+function simple_entity_load($tkid, $reset = FALSE) {
+  $simple_entities = simple_entity_load_multiple(array($tkid), array(), $reset);
+  return reset($simple_entities);
+}
+
+/**
+ * Load multiple simple entities based on certain conditions.
+ */
+function simple_entity_load_multiple($tkids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('simple_entity', $tkids, $conditions, $reset);
+}
+
+/**
+ * Save simple_entity.
+ */
+function simple_entity_save($simple_entity) {
+  entity_save('simple_entity', $simple_entity);
+}
+
+/**
+ * Delete single simple_entity.
+ */
+function simple_entity_delete($simple_entity) {
+  entity_delete('simple_entity', entity_id('simple_entity' ,$simple_entity));
+}
+
+/**
+ * Delete multiple simple entities.
+ */
+function simple_entity_delete_multiple($simple_entity_ids) {
+  entity_delete_multiple('simple_entity', $simple_entity_ids);
+}
+
+
+/*******************************************************************************
+ ****************************** Simple Entity Type API's ********************************
+ ******************************************************************************/
+
+/**
+ * Access callback for simple_entity Type.
+ */
+function simple_entity_type_access($op, $entity = NULL) {
+  return user_access('administer simple_entity types');
+}
+
+/**
+ * Load simple_entity Type.
+ */
+function simple_entity_type_load($simple_entity_type) {
+  return simple_entity_types($simple_entity_type);
+}
+
+/**
+ * List of simple_entity Types.
+ */
+function simple_entity_types($type_name = NULL) {
+  $types = entity_load_multiple_by_name('simple_entity_type', isset($type_name) ? array($type_name) : FALSE);
+  return isset($type_name) ? reset($types) : $types;
+}
+
+/**
+ * Save simple_entity type entity.
+ */
+function simple_entity_type_save($simple_entity_type) {
+  entity_save('simple_entity_type', $simple_entity_type);
+}
+
+/**
+ * Delete single case type.
+ */
+function simple_entity_type_delete($simple_entity_type) {
+  entity_delete('simple_entity_type', entity_id('simple_entity_type' ,$simple_entity_type));
+}
+
+/**
+ * Delete multiple case types.
+ */
+function simple_entity_type_delete_multiple($simple_entity_type_ids) {
+  entity_delete_multiple('simple_entity_type', $simple_entity_type_ids);
+}
+
+/**
+  * Implements hook_views_api().
+  */
+function simple_entity_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'simple_entity'),
+  );
+}
+
