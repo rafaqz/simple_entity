@@ -9,7 +9,7 @@ function simple_entity_schema() {
   $schema['simple_entity'] = array(
     'description' => 'The base table for simple entities.',
     'fields' => array(
-      'tkid' => array(
+      'sid' => array(
         'description' => 'The primary identifier for the simple_entity.',
         'type' => 'serial',
         'unsigned' => TRUE,
@@ -51,7 +51,7 @@ function simple_entity_schema() {
         'type' => 'text',
       ),
     ),
-    'primary key' => array('tkid'),
+    'primary key' => array('sid'),
   );
 
   $schema['simple_entity_type'] = array(
