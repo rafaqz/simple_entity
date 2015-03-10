@@ -12,7 +12,7 @@ function simple_entity_entity_info() {
       'base table' => 'simple_entity',
       'fieldable' => TRUE,
       'entity keys' => array(
-        'id' => 'tkid',
+        'id' => 'sid',
         'bundle' => 'type',
       ),
       'bundle keys' => array(
@@ -252,16 +252,16 @@ function simple_entity_access($op, $simple_entity, $account = NULL, $entity_type
 /**
  * Load a simple_entity.
  */
-function simple_entity_load($tkid, $reset = FALSE) {
-  $simple_entities = simple_entity_load_multiple(array($tkid), array(), $reset);
+function simple_entity_load($sid, $reset = FALSE) {
+  $simple_entities = simple_entity_load_multiple(array($sid), array(), $reset);
   return reset($simple_entities);
 }
 
 /**
  * Load multiple simple entities based on certain conditions.
  */
-function simple_entity_load_multiple($tkids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('simple_entity', $tkids, $conditions, $reset);
+function simple_entity_load_multiple($sids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('simple_entity', $sids, $conditions, $reset);
 }
 
 /**
@@ -343,3 +343,22 @@ function simple_entity_views_api() {
   );
 }
 
+  /* function simple_entity_field_extra_fields() { */
+/*   $return = array(); */
+/*   foreach(simple_entity_types() as $type => $info) { */
+/*     $return['simple_entity'][$type] = array( */
+/*       'form' => array( */
+/*         'title' => array( */
+/*           'label' => t('Title'), */
+/*           'description' => t('Title for the entity'), */
+/*         ), */
+/*         'description' => array( */
+/*           'label' => t('Description'), */
+/*           'description' => t('Description for the entity'), */
+/*         ), */
+/*       ), */
+/*     ); */
+/*   } */
+ 
+/*   return $return; */
+/* } */
