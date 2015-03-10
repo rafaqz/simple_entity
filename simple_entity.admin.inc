@@ -29,26 +29,26 @@ function simple_entity_type_form($form, &$form_state, $simple_entity_type, $op =
       'exists' => 'simple_entity_types',
       'source' => array('label'),
     ),
-    '#description' => t('A unique machine-readable name for this simple_entity type. It must only contain lowercase letters, numbers, and underscores.'),
+    '#description' => t('A unique machine-readable name for this simple entity type. It must only contain lowercase letters, numbers, and underscores.'),
   );
 
   $form['description'] = array(
     '#type' => 'textarea',
     '#default_value' => isset($simple_entity_type->description) ? $simple_entity_type->description : '',
-    '#description' => t('Description about the simple_entity type.'),
+    '#description' => t('Description about the simple entity type.'),
   );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save simple_entity type'),
+    '#value' => t('Save simple entity type'),
     '#weight' => 40,
   );
 
   if (!$simple_entity_type->isLocked() && $op != 'add' && $op != 'clone') {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
-      '#value' => t('Delete simple_entity type'),
+      '#value' => t('Delete simple entity type'),
       '#weight' => 45,
       '#limit_validation_errors' => array(),
       '#submit' => array('simple_entity_type_form_submit_delete')
@@ -110,7 +110,7 @@ function simple_entity_admin_add_page() {
   foreach (simple_entity_types() as $simple_entity_type_key => $simple_entity_type) {
     $items[] = l(entity_label('simple_entity_type', $simple_entity_type), 'simple_entity/add/' . $simple_entity_type_key);
   }
-  return array('list' => array('#theme' => 'item_list', '#items' => $items, '#title' => t('Select type of simple_entity to create.')));
+  return array('list' => array('#theme' => 'item_list', '#items' => $items, '#title' => t('Select type of simple entity to create.')));
 }
 
 /**
@@ -162,6 +162,7 @@ function simple_entity_form($form, &$form_state, $simple_entity) {
     '#weight' => 100,
   );
 
+  //@TODO use the entity type label instead of the machine name here...
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save ') . $simple_entity->type,
